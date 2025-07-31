@@ -1,0 +1,37 @@
+// index.js
+const express = require('express');
+const bodyParser = require('body-parser');
+const axios = require('axios');
+require('dotenv').config();
+
+const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.post('/webhook', async (req, res) => {
+    const incomingMsg = req.body.Body;
+    const from = req.body.From;
+
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: incomingMsg }]
+    }, {
+        headers: {
+            "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+            "Content-Type": "application/json"
+        }
+    });
+
+    const reply = response.data.choices[0].message.content;
+
+    res.set('Content-Type', 'text/xml');
+    res.send(`
+        <Response>
+            <Message>${reply}</Message>
+        </Response>
+    `);
+});
+
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
